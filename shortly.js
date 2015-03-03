@@ -51,6 +51,26 @@ app.post('/login', function(req, res) {
   var username = req.body.username;
   var password = req.body.password;
 
+  var user = new User({username: username});
+
+  user.fetch().then(function(found) {
+    if (found) {
+      var salt = found.attributes.salt;
+      var hash = bcrypt.hashSync(password, salt);
+      if (hash === found.attributes.password) {
+        req.session.regenerate(function(){
+          req.session.user = username;
+          res.redirect('/');
+        });
+      } else {
+        // res.send(200, 'incorect password');
+        res.redirect('/login');
+      }
+    } else {
+      // res.send(200, 'user not found');
+      res.redirect('/login');
+    }
+  });
 });
 
 app.get('/signup', function(req, res){
@@ -62,17 +82,12 @@ app.post('/signup', function(req, res){
     if (found) {
       res.send(200, "username already taken");
     } else {
-      var salt = bcrypt.genSaltSync(10);
-      var hash = bcrypt.hashSync(req.body.password, salt);
       var user = new User({
         username: req.body.username,
-        password: req.body.password
+        password: req.body.password,
       });
-      console.log('doing stuff')
 
       user.save().then(function(newUser) {
-        console.log('save worked!!!');
-        console.log(newUser);
         req.session.regenerate(function(){
           req.session.user = newUser.attributes.username;
           res.redirect('/');
