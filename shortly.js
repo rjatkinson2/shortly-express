@@ -42,6 +42,12 @@ function(req, res) {
   //  render the login page
 });
 
+app.get('/logout', function(req, res){
+  req.session.regenerate(function(){
+    res.redirect('/');
+  });
+});
+
 app.get('/login', function(req, res) {
   res.render('login');
 });
