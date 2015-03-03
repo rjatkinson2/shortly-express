@@ -25,7 +25,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(session({secret: 'jamaicanbacon', resave: true, saveUninitialized: false}));
 app.use(express.static(__dirname + '/public'));
 
-var restrict = function(req, res, next){
+var checkUser = function(req, res, next){
   if(req.session.user){
     next();
   }else {
@@ -34,7 +34,7 @@ var restrict = function(req, res, next){
   }
 };
 
-app.get('/', restrict,
+app.get('/', checkUser,
 function(req, res) {
   //if user is signed in
     res.render('index');
@@ -103,12 +103,12 @@ app.post('/signup', function(req, res){
   });
 });
 
-app.get('/create', restrict,
+app.get('/create', checkUser,
 function(req, res) {
   res.render('index');
 });
 
-app.get('/links', restrict,
+app.get('/links', checkUser,
 function(req, res) {
   Links.reset().fetch().then(function(links) {
     res.send(200, links.models);
