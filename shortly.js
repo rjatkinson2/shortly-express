@@ -3,6 +3,7 @@ var util = require('./lib/utility');
 var partials = require('express-partials');
 var bodyParser = require('body-parser');
 var session = require('express-session');
+var bcrypt = require('bcrypt');
 
 
 var db = require('./app/config');
@@ -52,7 +53,26 @@ app.post('/login', function(req, res) {
   var username = req.body.username;
   var password = req.body.password;
 
+});
 
+app.post('/signup', function(req, res){
+  console.log(req.body);
+  new User({username: req.body.username}).fetch().then(function(found) {
+    if (found) {
+      res.send(200, "username already taken");
+    } else {
+      var salt = bcrypt.genSaltSync(10);
+      var hash = bcrypt.hashSync(req.body.password, salt);
+      var user = new User({
+        username: req.body.username,
+        password: req.body.password
+      });
+
+      user.save().then(function(newUser) {
+        res.send(200, 'signup complete!');
+      });
+    }
+  });
 });
 
 app.get('/create', restrict,
