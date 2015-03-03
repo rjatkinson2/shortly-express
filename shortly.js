@@ -36,8 +36,6 @@ var restrict = function(req, res, next){
 
 app.get('/', restrict,
 function(req, res) {
-  console.log('bode eee');
-  console.log(req.body);
   //if user is signed in
     res.render('index');
   //else
@@ -55,8 +53,11 @@ app.post('/login', function(req, res) {
 
 });
 
+app.get('/signup', function(req, res){
+  res.render('signup');
+});
+
 app.post('/signup', function(req, res){
-  console.log(req.body);
   new User({username: req.body.username}).fetch().then(function(found) {
     if (found) {
       res.send(200, "username already taken");
@@ -67,9 +68,15 @@ app.post('/signup', function(req, res){
         username: req.body.username,
         password: req.body.password
       });
+      console.log('doing stuff')
 
       user.save().then(function(newUser) {
-        res.send(200, 'signup complete!');
+        console.log('save worked!!!');
+        console.log(newUser);
+        req.session.regenerate(function(){
+          req.session.user = newUser.attributes.username;
+          res.redirect('/');
+        });
       });
     }
   });
