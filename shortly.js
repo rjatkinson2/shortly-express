@@ -43,12 +43,24 @@ function(req, res) {
   //  render the login page
 });
 
-app.get('/create',
+app.get('/login', function(req, res) {
+  res.render('login');
+});
+
+app.post('/login', function(req, res) {
+
+  var username = req.body.username;
+  var password = req.body.password;
+
+
+});
+
+app.get('/create', restrict,
 function(req, res) {
   res.render('index');
 });
 
-app.get('/links',
+app.get('/links', restrict,
 function(req, res) {
   Links.reset().fetch().then(function(links) {
     res.send(200, links.models);
