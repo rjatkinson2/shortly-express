@@ -4,7 +4,8 @@ var partials = require('express-partials');
 var bodyParser = require('body-parser');
 var session = require('express-session');
 var bcrypt = require('bcrypt-nodejs');
-
+var passport = require('passport');
+var LocalStrategy = require('passport-local').Strategy;
 
 var db = require('./app/config');
 var Users = require('./app/collections/users');
@@ -23,16 +24,45 @@ app.use(bodyParser.json());
 // Parse forms (signup/login)
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(session({secret: 'jamaicanbacon', resave: true, saveUninitialized: false}));
+app.use(passport.initialize());
+app.use(passport.session());
 app.use(express.static(__dirname + '/public'));
 
 var checkUser = function(req, res, next){
-  if(req.session.user){
+  if(req.session.passport.user || req.session.user){
     next();
   }else {
     req.session.error = "Not allowed!";
     res.redirect('/login');
   }
 };
+
+passport.use(new LocalStrategy(
+  function(username, password, done){
+    new User({username: username}).fetch().then(function(found){
+      if(found){
+        bcrypt.compare(password, found.attributes.password, function(err, result){
+          if(err){return done(err);}
+          else if(result){
+            return done(null, found.attributes);
+          }else{
+            return done(null, false, {message: 'Incorrect password.'});
+          }
+        });
+      }else{
+        return done(null, false, {message: 'Incorrect username'});
+      }
+    });
+  }
+));
+
+passport.serializeUser(function(user, done) {
+  done(null, user);
+});
+
+passport.deserializeUser(function(user, done) {
+  done(null, user);
+});
 
 app.get('/', checkUser,
 function(req, res) {
@@ -52,34 +82,11 @@ app.get('/login', function(req, res) {
   res.render('login');
 });
 
-app.post('/login', function(req, res) {
-
-  var username = req.body.username;
-  var password = req.body.password;
-
-  var user = new User({username: username});
-
-  user.fetch().then(function(found) {
-    if (found) {
-      bcrypt.compare(password, found.attributes.password,function(err, result){
-        if(err){
-          // log error
-          res.redirect('/login');
-        }else if(result){
-          req.session.regenerate(function(){
-            req.session.user = username;
-            res.redirect('/');
-          });        
-        }else{
-
-        }
-      });
-    } else {
-      // res.send(200, 'user not found');
-      res.redirect('/login');
-    }
-  });
-});
+app.post('/login', passport.authenticate('local', {
+  successRedirect: '/',
+  failureRedirect: '/login',
+  failureFlash: false
+}));
 
 app.get('/signup', function(req, res){
   res.render('signup');
