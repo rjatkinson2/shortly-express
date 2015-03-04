@@ -294,9 +294,9 @@ describe('', function() {
           'username': 'Phillip',
           'password': 'Phillip'
       }).save().then(function(){
-        done()
+        done();
       });
-    })
+    });
 
     it('Logs in existing users', function(done) {
       var options = {

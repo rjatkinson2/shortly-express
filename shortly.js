@@ -3,7 +3,7 @@ var util = require('./lib/utility');
 var partials = require('express-partials');
 var bodyParser = require('body-parser');
 var session = require('express-session');
-var bcrypt = require('bcrypt');
+var bcrypt = require('bcrypt-nodejs');
 
 
 var db = require('./app/config');
@@ -61,17 +61,19 @@ app.post('/login', function(req, res) {
 
   user.fetch().then(function(found) {
     if (found) {
-      var salt = found.attributes.salt;
-      var hash = bcrypt.hashSync(password, salt);
-      if (hash === found.attributes.password) {
-        req.session.regenerate(function(){
-          req.session.user = username;
-          res.redirect('/');
-        });
-      } else {
-        // res.send(200, 'incorect password');
-        res.redirect('/login');
-      }
+      bcrypt.compare(password, found.attributes.password,function(err, result){
+        if(err){
+          // log error
+          res.redirect('/login');
+        }else if(result){
+          req.session.regenerate(function(){
+            req.session.user = username;
+            res.redirect('/');
+          });        
+        }else{
+
+        }
+      });
     } else {
       // res.send(200, 'user not found');
       res.redirect('/login');
@@ -92,7 +94,6 @@ app.post('/signup', function(req, res){
         username: req.body.username,
         password: req.body.password,
       });
-
       user.save().then(function(newUser) {
         req.session.regenerate(function(){
           req.session.user = newUser.attributes.username;
@@ -120,7 +121,6 @@ function(req, res) {
   var uri = req.body.url;
 
   if (!util.isValidUrl(uri)) {
-    console.log('Not a valid url: ', uri);
     return res.send(404);
   }
 
